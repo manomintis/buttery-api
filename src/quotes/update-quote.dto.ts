@@ -12,6 +12,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { DiscountType } from './discount-type.enum';
 import { QuoteStatus } from './quote-status.enum';
 import { Trim } from './trim.decorator';
 
@@ -26,6 +27,21 @@ export class UpdateQuoteDto {
   @IsOptional()
   @IsEnum(QuoteStatus)
   status?: QuoteStatus;
+
+  @IsOptional()
+  @IsEnum(DiscountType)
+  discountType?: DiscountType | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  discountValue?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  taxRate?: number;
 
   @IsOptional()
   @IsArray()

@@ -9,6 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { v7 as uuid } from 'uuid';
+import { DiscountType } from './discount-type.enum';
 import { QuoteStatus } from './quote-status.enum';
 import { Section } from './sections.entity';
 
@@ -29,6 +30,15 @@ export class Quote {
     default: QuoteStatus.Draft,
   })
   status!: QuoteStatus;
+
+  @Column({ type: 'simple-enum', enum: DiscountType, nullable: true })
+  discountType!: DiscountType | null;
+
+  @Column({ type: 'int', default: 0 })
+  discountValue!: number;
+
+  @Column({ type: 'int', default: 0 })
+  taxRate!: number;
 
   @ManyToOne(() => Organization, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'organizationId' })

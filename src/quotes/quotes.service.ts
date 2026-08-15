@@ -15,6 +15,12 @@ import {
 } from './update-quote.dto';
 import { Section } from './sections.entity';
 import { Item } from './items.entity';
+import { DiscountType } from './discount-type.enum';
+import { quoteTotals, type QuoteTotals } from './totals';
+
+export type QuoteWithTotals = Quote & { totals: QuoteTotals };
+
+const MAX_PERCENTAGE_DISCOUNT = 10000;
 
 @Injectable()
 export class QuotesService {
@@ -48,7 +54,7 @@ export class QuotesService {
     return this.getOrgQuotes(user.organizationId);
   }
 
-  async getQuoteForTenant(user: User, id: string): Promise<Quote> {
+  async getQuoteForTenant(user: User, id: string): Promise<QuoteWithTotals> {
     const quote = await this.getOrgQuote(
       this.quoteRepository,
       user.organizationId,
@@ -59,17 +65,24 @@ export class QuotesService {
       throw new NotFoundException(`Quote ${id} not found`);
     }
 
-    return quote;
+    return this.withTotals(quote);
   }
 
-  createQuoteForTenant(user: User, quote: CreateQuoteDto): Promise<Quote> {
+  async createQuoteForTenant(
+    user: User,
+    quote: CreateQuoteDto,
+  ): Promise<QuoteWithTotals> {
     this.rejectSuppliedIds(quote);
+    this.rejectExcessiveDiscount(quote.discountType, quote.discountValue);
 
-    return this.quoteRepository.save(
+    const created = await this.quoteRepository.save(
       this.quoteRepository.create({
         organizationId: user.organizationId,
         customerName: quote.customerName,
         status: quote.status,
+        discountType: quote.discountType,
+        discountValue: quote.discountValue,
+        taxRate: quote.taxRate,
         sections: quote.sections?.map((section) => ({
           name: section.name,
           markup: section.markup,
@@ -81,6 +94,12 @@ export class QuotesService {
         })),
       }),
     );
+
+    return await this.getQuoteForTenant(user, created.id);
+  }
+
+  private withTotals(quote: Quote): QuoteWithTotals {
+    return Object.assign(quote, { totals: quoteTotals(quote) });
   }
 
   private rejectSuppliedIds(quote: CreateQuoteDto): void {
@@ -101,7 +120,7 @@ export class QuotesService {
     user: User,
     id: string,
     update: UpdateQuoteDto,
-  ): Promise<Quote | null> {
+  ): Promise<QuoteWithTotals> {
     return await this.quoteRepository.manager.transaction(async (manager) => {
       const quotes = manager.getRepository(Quote);
       const quote = await this.getOrgQuote(quotes, user.organizationId, id);
@@ -110,19 +129,50 @@ export class QuotesService {
         throw new NotFoundException(`Quote ${id} not found`);
       }
 
+      const discountType =
+        update.discountType === undefined
+          ? quote.discountType
+          : update.discountType;
+      const discountValue = update.discountValue ?? quote.discountValue;
+
+      this.rejectExcessiveDiscount(discountType, discountValue);
+
       await quotes.save(
         quotes.create({
           ...quote,
           customerName: update.customerName ?? quote.customerName,
           status: update.status ?? quote.status,
+          discountType,
+          discountValue,
+          taxRate: update.taxRate ?? quote.taxRate,
           sections: update.sections
             ? this.mergeSections(quote.sections, update.sections)
             : quote.sections,
         }),
       );
 
-      return await this.getOrgQuote(quotes, user.organizationId, id);
+      const saved = await this.getOrgQuote(quotes, user.organizationId, id);
+
+      if (!saved) {
+        throw new NotFoundException(`Quote ${id} not found`);
+      }
+
+      return this.withTotals(saved);
     });
+  }
+
+  private rejectExcessiveDiscount(
+    type: DiscountType | null | undefined,
+    value: number | undefined,
+  ): void {
+    if (
+      type === DiscountType.Percentage &&
+      (value ?? 0) > MAX_PERCENTAGE_DISCOUNT
+    ) {
+      throw new BadRequestException(
+        'A percentage discount cannot be more than 100%',
+      );
+    }
   }
 
   private mergeSections(
