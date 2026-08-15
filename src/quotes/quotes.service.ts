@@ -52,6 +52,20 @@ export class QuotesService {
     return this.getOrgQuotes(user.organizationId);
   }
 
+  async getQuoteForTenant(user: User, id: string): Promise<Quote> {
+    const quote = await this.getOrgQuote(
+      this.quoteRepository,
+      user.organizationId,
+      id,
+    );
+
+    if (!quote) {
+      throw new NotFoundException(`Quote ${id} not found`);
+    }
+
+    return quote;
+  }
+
   createQuoteForTenant(user: User, quote: CreateQuoteDto): Promise<Quote> {
     this.rejectSuppliedIds(quote);
 

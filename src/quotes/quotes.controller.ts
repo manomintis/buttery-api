@@ -23,6 +23,14 @@ export class QuotesController {
     return await this.quotesService.getQuotesForTenant(user);
   }
 
+  @Get(':id')
+  async quoteGet(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return await this.quotesService.getQuoteForTenant(request.user, id);
+  }
+
   @Put()
   async quoteCreate(
     @Req() request: AuthenticatedRequest,
