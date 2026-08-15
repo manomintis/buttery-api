@@ -3,6 +3,7 @@ import { Quote } from './quotes.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type User } from './users.entity';
+import { type CreateQuoteDto } from './create-quote.dto';
 
 @Injectable()
 export class QuotesService {
@@ -17,5 +18,14 @@ export class QuotesService {
 
   getQuotesForTenant(user: User): Promise<Quote[] | null> {
     return this.getOrgQuotes(user.organizationId);
+  }
+
+  createQuoteForTenant(user: User, quote: CreateQuoteDto): Promise<Quote> {
+    return this.quoteRepository.save(
+      this.quoteRepository.create({
+        ...quote,
+        organizationId: user.organizationId,
+      }),
+    );
   }
 }

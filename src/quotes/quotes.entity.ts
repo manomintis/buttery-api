@@ -34,7 +34,7 @@ export class Quote {
   @JoinColumn({ name: 'organizationId' })
   organization!: Organization;
 
-  @OneToMany(() => Section, (section) => section.quote)
+  @OneToMany(() => Section, (section) => section.quote, { cascade: ['insert'] })
   sections!: Section[];
 
   @BeforeInsert()

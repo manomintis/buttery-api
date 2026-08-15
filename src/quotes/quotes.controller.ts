@@ -1,6 +1,7 @@
-import { Controller, Get, Put, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Put, Post, Req } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 import { type AuthenticatedRequest } from 'src/auth/user.guard';
+import { type CreateQuoteDto } from './create-quote.dto';
 
 @Controller('quotes')
 export class QuotesController {
@@ -13,8 +14,11 @@ export class QuotesController {
   }
 
   @Put()
-  quoteCreate() {
-    return true;
+  async quoteCreate(
+    @Req() request: AuthenticatedRequest,
+    @Body() quote: CreateQuoteDto,
+  ) {
+    return await this.quotesService.createQuoteForTenant(request.user, quote);
   }
 
   @Post()
