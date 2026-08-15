@@ -13,7 +13,14 @@ export class QuotesService {
   ) {}
 
   private async getOrgQuotes(organizationId: string): Promise<Quote[] | null> {
-    return await this.quoteRepository.find({ where: { organizationId } });
+    return await this.quoteRepository.find({
+      where: { organizationId },
+      relations: { sections: { items: true } },
+      order: {
+        id: 'ASC',
+        sections: { id: 'ASC', items: { id: 'ASC' } },
+      },
+    });
   }
 
   getQuotesForTenant(user: User): Promise<Quote[] | null> {
