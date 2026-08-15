@@ -1,6 +1,16 @@
-import { Entity, Column, BeforeInsert, PrimaryColumn } from 'typeorm';
+import { Organization } from 'src/organizations/organizations.entity';
+import {
+  Entity,
+  Column,
+  BeforeInsert,
+  PrimaryColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { v7 as uuid } from 'uuid';
 import { QuoteStatus } from './quote-status.enum';
+import { Section } from './sections.entity';
 
 @Entity('quotes')
 export class Quote {
@@ -10,7 +20,7 @@ export class Quote {
   @Column('uuid')
   organizationId!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ length: 255 })
   customerName!: string;
 
   @Column({
@@ -19,6 +29,13 @@ export class Quote {
     default: QuoteStatus.Draft,
   })
   status!: QuoteStatus;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT', nullable: false })
+  @JoinColumn({ name: 'organizationId' })
+  organization!: Organization;
+
+  @OneToMany(() => Section, (section) => section.quote)
+  sections!: Section[];
 
   @BeforeInsert()
   generateId(): void {
