@@ -53,12 +53,38 @@ export class QuotesService {
   }
 
   createQuoteForTenant(user: User, quote: CreateQuoteDto): Promise<Quote> {
+    this.rejectSuppliedIds(quote);
+
     return this.quoteRepository.save(
       this.quoteRepository.create({
-        ...quote,
         organizationId: user.organizationId,
+        customerName: quote.customerName,
+        status: quote.status,
+        sections: quote.sections?.map((section) => ({
+          name: section.name,
+          markup: section.markup,
+          items: section.items?.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        })),
       }),
     );
+  }
+
+  private rejectSuppliedIds(quote: CreateQuoteDto): void {
+    const submitted = [
+      quote,
+      ...(quote.sections ?? []).flatMap((section) => [
+        section,
+        ...(section.items ?? []),
+      ]),
+    ];
+
+    if (submitted.some((entry) => 'id' in entry)) {
+      throw new BadRequestException('IDs cannot be supplied when creating');
+    }
   }
 
   async updateQuoteForTenant(

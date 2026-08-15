@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Param, Put, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Put,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 import { type AuthenticatedRequest } from 'src/auth/user.guard';
-import { type CreateQuoteDto } from './create-quote.dto';
-import { type UpdateQuoteDto } from './update-quote.dto';
+import { CreateQuoteDto } from './create-quote.dto';
+import { UpdateQuoteDto } from './update-quote.dto';
 
 @Controller('quotes')
 export class QuotesController {
@@ -25,7 +34,7 @@ export class QuotesController {
   @Post(':id')
   async quoteUpdate(
     @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() quote: UpdateQuoteDto,
   ) {
     return await this.quotesService.updateQuoteForTenant(
