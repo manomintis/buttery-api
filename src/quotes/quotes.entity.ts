@@ -34,7 +34,10 @@ export class Quote {
   @JoinColumn({ name: 'organizationId' })
   organization!: Organization;
 
-  @OneToMany(() => Section, (section) => section.quote, { cascade: ['insert'] })
+  @OneToMany(() => Section, (section) => section.quote, {
+    cascade: ['insert', 'update'],
+    orphanedRowAction: 'delete',
+  })
   sections!: Section[];
 
   @BeforeInsert()

@@ -26,7 +26,10 @@ export class Section {
   @JoinColumn({ name: 'quoteId' })
   quote!: Quote;
 
-  @OneToMany(() => Item, (item) => item.section, { cascade: ['insert'] })
+  @OneToMany(() => Item, (item) => item.section, {
+    cascade: ['insert', 'update'],
+    orphanedRowAction: 'delete',
+  })
   items!: Item[];
 
   @BeforeInsert()
